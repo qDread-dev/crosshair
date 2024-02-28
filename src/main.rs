@@ -19,11 +19,10 @@ fn main() {
     // tray icon
     let tray_menu = Menu::new();
     let _tray_icon = TrayIconBuilder::new()
-    .with_menu(Box::new(tray_menu))
-    .with_tooltip("Crosshair - Right click to close")
-    .build()
-    .unwrap();
-    
+        .with_menu(Box::new(tray_menu))
+        .with_tooltip("Crosshair - Right click to close")
+        .build()
+        .unwrap();
 
     let event_loop = winit::event_loop::EventLoopBuilder::new().build().expect("event loop building");
     let window_builder = WindowBuilder::new()
@@ -40,7 +39,7 @@ fn main() {
     let mut frame = display.draw();
     frame.clear_color(0.0, 0.0, 0.0, 0.0);
     // actual crosshair
-    let mut crosshair: Vec<Vertex> = vec![];
+    let crosshair: Vec<Vertex>;
     
     let mut file = std::fs::OpenOptions::new()
         .read(true)
@@ -66,7 +65,7 @@ fn main() {
         }).collect();
         crosshair = circle;
     } else {
-        let mut vertex_entries = crosshair_file.split(";");
+        let vertex_entries = crosshair_file.split(";");
         dbg!(&vertex_entries);
         let mut vertex_vec: Vec<Vertex> = vec![];
         for entry in vertex_entries {
@@ -84,7 +83,7 @@ fn main() {
     let vertex_buffer = glium::VertexBuffer::new(&display, &crosshair).unwrap();
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
 
-    let vertex_shader_src = r#"
+    let mut vertex_shader_src = r#"
         #version 140
 
         in vec2 position;
@@ -93,8 +92,22 @@ fn main() {
             gl_Position = vec4(position, 0.0, 1.0);
         }
     "#;
+    let mut vertex_shader_file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open("vertex_shader.txt")
+        .unwrap();
+    
+    // Read the file contents into a string
+    let mut vertex_shader = String::new();
+    vertex_shader_file.read_to_string(&mut vertex_shader).unwrap();
+    
+    if vertex_shader != "" {
+        vertex_shader_src = vertex_shader.as_str();
+    }
 
-    let fragment_shader_src = r#"
+    let mut fragment_shader_src = r#"
     #version 140
 
     out vec4 color;
@@ -103,6 +116,19 @@ fn main() {
         color = vec4(0.0, 0.97, 1.0, 1.0);
     }
     "#;
+    let mut frag_shader_file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open("frag_shader.txt")
+        .unwrap();
+    
+    // Read the file contents into a string
+    let mut frag_shader = String::new();
+    frag_shader_file.read_to_string(&mut frag_shader).unwrap();
+    if frag_shader != "" {
+        fragment_shader_src = frag_shader.as_str();
+    }
 
     let program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None).unwrap();
 
@@ -110,10 +136,6 @@ fn main() {
     target.clear_color(0.0, 0.0, 0.0, 0.0);
     target.draw(&vertex_buffer, &indices, &program, &glium::uniform! {}, &Default::default()).unwrap();
     target.finish().unwrap();
-    // let mut target = display.draw();
-    // target.clear_color(0.0, 0.0, 0.0, 0.0);
-    // target.draw(&vertex_buffer, &indices, &program, &glium::uniforms::EmptyUniforms,&Default::default()).unwrap();
-    // target.finish().unwrap();
 
     event_loop.run(move |ev, window_target| {
         match ev {
