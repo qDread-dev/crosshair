@@ -16,11 +16,11 @@ fn main() {
 
     // tray icon
     let tray_menu = Menu::new();
-    let tray_icon = TrayIconBuilder::new()
-    .with_menu(Box::new(tray_menu))
-    .with_tooltip("Crosshair - Right click to close")
-    .build()
-    .unwrap();
+    let _tray_icon = TrayIconBuilder::new()
+        .with_menu(Box::new(tray_menu))
+        .with_tooltip("Crosshair - Right click to close")
+        .build()
+        .unwrap();
     
 
     let event_loop = winit::event_loop::EventLoopBuilder::new().build().expect("event loop building");
