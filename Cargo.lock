@@ -541,6 +541,7 @@ dependencies = [
  "glutin 0.31.3",
  "glutin-winit",
  "tray-icon",
+ "winapi",
  "winit 0.29.11",
 ]
 

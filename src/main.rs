@@ -2,8 +2,14 @@ use std::io::Read;
 
 use glium::Surface;
 use winit::{platform::windows::WindowBuilderExtWindows, window::WindowBuilder};
-
-use tray_icon::{TrayIconBuilder, menu::Menu, TrayIconEvent};
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop}};
+use tray_icon::{menu::{Menu, PhysicalPosition}, TrayIconBuilder, TrayIconEvent};
+use std::process;
+use std::time::Duration;
+use winapi::um::winuser::{GetForegroundWindow, GetWindowRect, GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
+use winapi::shared::windef::RECT;
 
 #[macro_use]
 extern crate glium;
@@ -19,15 +25,34 @@ fn main() {
     // tray icon
     let tray_menu = Menu::new();
     let _tray_icon = TrayIconBuilder::new()
-        .with_menu(Box::new(tray_menu))
-        .with_tooltip("Crosshair - Right click to close")
-        .build()
-        .unwrap();
+    .with_menu(Box::new(tray_menu))
+    .with_tooltip("Crosshair - Right click to close")
+    .build()
+    .unwrap();
 
     let event_loop = winit::event_loop::EventLoopBuilder::new().build().expect("event loop building");
+    let monitor: Option<winit::monitor::MonitorHandle> = event_loop.primary_monitor();
+    let proxy = event_loop.create_proxy();
+
+    // must make the window 1 larger to prevent windows from detecting it as fullscreen
+    // if windows detects it as fullscreen transparency is disabled, and background becomes black
+    let size = match monitor {
+        Some(monitor) => {
+            let mut size = monitor.size();
+            size.width += 1;
+            size.height += 1;
+            size
+        },
+        None => {
+            println!("No primary monitor found");
+            return;
+        }
+    };
     let window_builder = WindowBuilder::new()
         .with_transparent(true)
-        .with_maximized(true)
+        .with_inner_size(size)
+        .with_position(winit::dpi::PhysicalPosition::new(-1, -1))
+        // .with_fullscreen(Some(Fullscreen::Borderless(monitor)))
         .with_decorations(false)
         .with_window_level(winit::window::WindowLevel::AlwaysOnTop)
         .with_skip_taskbar(true)
@@ -155,4 +180,6 @@ fn main() {
         }
     })
     .unwrap();
+   
+
 }
